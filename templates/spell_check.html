@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Spell Check</h1>
+    <form action="" method="post" novalidate>
+    	{{ form.hidden_tag() }}
+        <p>
+            InputText:<br>
+	    <input id="inputtext" name="inputtext" type="text" value=""><br>
+        </p>
+
+        <p><input id="submit" name="submit" type="submit" value="Check"></p>
+        {% if misspelled %}
+        <p><element type="hidden" id="misspelled" value="{{ misspelled }}">Misspelled: {{ misspelled }}</p>
+	{% else %}
+	{% endif %}
+	{% if textout %}
+        <p><element type="hidden" id="textout" value="{{ textout }}">Initial Text:{{ textout }}</p>
+	{% else %}
+	{% endif %}
+    </form>
+{% endblock %}

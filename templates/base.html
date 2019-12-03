@@ -1,0 +1,33 @@
+<html>
+    <head>
+        {% if title %}
+        <title>{{ title }} - Assignment 2</title>
+        {% else %}
+        <title>Spell Checker</title>
+        {% endif %}
+    </head>
+    <body>
+        <div>
+            Spell Checker:
+	    {% if user %}
+	    Hello,{{ user }}</title>
+	    {% endif %}
+            <a href="/">Home</a>
+            <a href="/login">Login</a>
+	    <a href="/register">Register</a>
+	    <a href="/spell_check">Spell check</a>
+        </div>
+	
+        <hr>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul>
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </body>
+</html>

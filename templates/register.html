@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Register</h1>
+    <form action="" method="post" novalidate>
+	{{ form.hidden_tag() }}        
+	<p>
+	
+            Username:<br>
+            <input id="uname" name="uname" required size="32" type="text" value=""><br>
+            
+        </p>
+        <p>
+            Password:<br>
+	    <input id="pword" name="pword" required size="32" type="password" value=""><br>
+            
+        </p>
+	<p>
+            Two-Factor Authentication:<br>
+           <input id="2fa" name="2fa" required size="32" type="text" value=""><br>
+        </p>
+	
+
+        <p><input id="submit" name="submit" type="submit" value="Register"></p>
+       
+    </form>
+	 {% if message %}
+        <element id="success" value="{{ message }}">{{ message }}<br>
+	{% else %}
+	{% endif %}
+{% endblock %}
