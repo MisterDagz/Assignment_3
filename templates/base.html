@@ -16,8 +16,10 @@
             <a href="/login">Login</a>
 	    <a href="/register">Register</a>
 	    <a href="/spell_check">Spell check</a>
-        </div>
-	
+	    {% if user %}
+	    <a href="/logout">Logout</a>
+	    {% endif %}
+        </div></a>
         <hr>
         {% with messages = get_flashed_messages() %}
         {% if messages %}

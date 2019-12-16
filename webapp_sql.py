@@ -43,8 +43,6 @@ def create_tables():
 		Column('username', String),
 		Column('password', String),
 		Column('twofa', String),
-		Column('cookie', String),
-		Column('failurecount', Integer),
 		Column('salt', String)
 	)
 
@@ -60,12 +58,13 @@ def create_tables():
 		Column('id', Integer, primary_key=True),
 		Column('username', String),
 		Column('login_time', DateTime),
-		Column('logout_time', DateTime)
+		Column('logout_time', DateTime),
+		Column('cookie', String)
 	)
 	'''
 	
 	Base.metadata.create_all(engine)
 	Session = sessionmaker(bind=engine)
-	return Session()
+	return Session
 
 

@@ -13,8 +13,7 @@ app=Flask(__name__)
 from datetime import datetime
 
 
-users = {}
-cookies = {}
+
 def hash_func(password, salt):
 	pass_hash = sha256()
 	salted = password + salt
@@ -32,17 +31,33 @@ def randomString(stringLength=20):
 app.config['SECRET_KEY'] = randomString(40)
 
 def checkcookie(auth, userid):
-	
+	sql_session = db_session()
 	results = sql_session.query(WebSession.username).filter(WebSession.username == userid, WebSession.cookie == auth).all()
 	if len(results) > 0:
+		sql_session.close()
 		return True
-
+	sql_session.close()
 	return False
 
 
 
-sql_session = create_tables()
-print('here')
+db_session = create_tables()
+
+def admin_init():
+	sql_session = db_session()
+	if len(sql_session.query(User.username).filter(User.username=="admin").all()) >0:
+		sql_session.close()
+		return
+	else:
+		pre_hash = "Administrator@1"
+		salt =   randomString(8)
+		password= hash_func(pre_hash, salt)
+		admin_user = User(username="admin", password=password, twofa="12345678901", salt=salt)
+		sql_session.add(admin_user)
+		sql_session.commit()
+		sql_session.close()
+		return
+admin_init()
 @app.route('/')
 def home():
 	user=None
@@ -54,6 +69,7 @@ def home():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+	sql_session = db_session()
 	form=LoginForm(request.form)
 	user=None
 	if 'username' in session.keys():
@@ -67,6 +83,7 @@ def register():
 		twofa = request.form.get('2fa')
 		if uname is not None:
 			if uname in users:
+				sql_session.close()
 				return render_template('register.html', title="Register", message="""failure""", form=form, user=user)
 			
 			else:
@@ -75,14 +92,17 @@ def register():
 				new_user = User(username=uname, password=password, twofa=twofa, salt=salt)
 				sql_session.add(new_user)
 				sql_session.commit()
+				sql_session.close()
 				return render_template('register.html', title="Register", message="""success""", form=form, user=user)
 				
 	if request.method == 'GET':
 	#else:
+		sql_session.close()
 		return render_template('register.html', title="Register", form=form,  user=user)
 	
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+	sql_session = db_session()
 	uname = request.form.get("uname")
 	pword = request.form.get('pword')
 	twofa = request.form.get('2fa')
@@ -98,6 +118,7 @@ def login():
 		user_res = user_query.first()
 		
 		if user_res == None:
+			sql_session.close()
 			return render_template('login.html', title="Login", message="""Incorrect Username or Password""", form=form, user=user)
 		else:
 			salt = user_res.salt
@@ -105,11 +126,13 @@ def login():
 			pass_query = sql_session.query(User.username).filter(User.username == uname, User.password == hashed)
 			pass_res = pass_query.all()
 			if len(pass_res) == 0:
+				sql_session.close()
 				return render_template('login.html', title="Login", message="""Incorrect Username or Password""", form=form, user=user)
 			else:
 				twofa_query = sql_session.query(User.username).filter(User.username == uname, User.password == hashed, User.twofa == twofa)
 				twofa_res = twofa_query.all()
 				if len(twofa_res) == 0:
+					sql_session.close()
 					return render_template('login.html', title="Login", message="""Two-factor Authentication Failure, wrong code supplied""", form=form, user=user)
 				else:
 					resp = make_response(render_template('login.html', title="Login", message="""Success""",form=form, user=uname))
@@ -119,6 +142,7 @@ def login():
 					sql_session.commit()
 					session['auth'] = auth_token
 					session['username'] = uname
+					sql_session.close()
 					return resp
 			
 	elif request.method=='GET':
@@ -129,8 +153,23 @@ def login():
 				if checkcookie(auth, cookies[auth]['username']):
 					return redirect("/")
 		"""
+		sql_session.close()
 		return render_template('login.html', title="Login", form=form, user=user)
-	
+
+@app.route('/login_history', methods=["GET", "POST"])
+def login_history():
+	p
+@app.route('/logout', methods=["GET","POST"])
+def logout():
+	if 'username' in session.keys():
+		if 'auth' in session.keys():
+			if checkcookie(session['auth'], session['username']):
+				now = datetime.now()
+				sql_session.query(WebSession).filter(WebSession.username==session['username'], WebSession.cookie==session['auth']).update({WebSession.cookie:None, WebSession.logouttime:now},synchronize_session=False)
+				sql_session.commit()
+				session.clear()
+				return redirect("/")
+	return redirect("/")
 @app.route('/spell_check', methods=["GET", "POST"])
 def spell_check():	
 	form=SpellCheckForm(request.form)
