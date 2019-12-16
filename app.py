@@ -3,7 +3,7 @@ import random
 import string
 import subprocess
 import os
-from flask_wtf.csrf import CSRFProtect
+from flask.ext.wtf.csrf import CSRFProtect
 from forms import *
 from hashlib import sha256
 from webapp_sql import *
@@ -46,7 +46,6 @@ print('here')
 @app.route('/')
 def home():
 	user=None
-	#Prevents cookie enumeration
 	if 'username' in session.keys():
 		if 'auth' in session.keys():
 			if checkcookie(session['auth'], session['username']):
