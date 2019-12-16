@@ -3,17 +3,24 @@ import random
 import string
 import subprocess
 import os
-from flask_wtf.csrf import CsrfProtect
+from flask_wtf.csrf import CSRFProtect
 from forms import *
 from hashlib import sha256
-
+from webapp_sql import *
 mkdir_init_call = subprocess.Popen(["mkdir", "userdata/"]) 
 mkdir_init_call.communicate()
 app=Flask(__name__)
+from datetime import datetime
 
 
 users = {}
 cookies = {}
+def hash_func(password, salt):
+	pass_hash = sha256()
+	salted = password + salt
+	pass_hash.update(salted.encode('utf-8', "ignore"))
+	hashed = pass_hash.hexdigest()
+	return hashed
 
 def randomString(stringLength=20):
 	letters = string.ascii_lowercase
@@ -25,23 +32,17 @@ def randomString(stringLength=20):
 app.config['SECRET_KEY'] = randomString(40)
 
 def checkcookie(auth, userid):
-	#enforces an allowed number of failures for cookie auth, if it exceeds 3, the current cookie for the user is invalid.
-	if auth in cookies.keys():
-		if cookies[auth]['username'] == userid:
-			return True
-		else:
-			cookies[auth]['failurecount'] += 1
-		if cookies[auth]['failurecount'] >=3:
-			cookies.pop(auth, None)
 	
-	if userid in users:
-		cookie = users[userid].get('cookie', None)
-		if cookie is not None:
-			cookies[cookie]['failurecount'] +=1 
-			if cookies[auth]['failurecount'] >=3:
-				cookies.pop(auth, None)
+	results = sql_session.query(WebSession.username).filter(WebSession.username == userid, WebSession.cookie == auth).all()
+	if len(results) > 0:
+		return True
+
 	return False
 
+
+
+sql_session = create_tables()
+print('here')
 @app.route('/')
 def home():
 	user=None
@@ -55,28 +56,30 @@ def home():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
 	form=LoginForm(request.form)
-	#if request.method == 'POST':
-		# .get returns none if form value not there
-	uname = request.form.get("uname")
-	pword = request.form.get('pword')
-	twofa = request.form.get('2fa')
 	user=None
 	if 'username' in session.keys():
 		if 'auth' in session.keys():
 			if checkcookie(session['auth'], session['username']):
 				user = session['username']
-	if uname is not None:
-		if uname in users:
-			return render_template('register.html', title="Register", message="""failure""", form=form, user=user)
-		
-		else:
-			jblob = {"username": uname, "password": pword, "2fa": twofa}
-			users[uname] = jblob
+	if request.method == 'POST':
+		# .get returns none if form value not there
+		uname = request.form.get("uname")
+		pword = request.form.get('pword')
+		twofa = request.form.get('2fa')
+		if uname is not None:
+			if uname in users:
+				return render_template('register.html', title="Register", message="""failure""", form=form, user=user)
 			
-			return render_template('register.html', title="Register", message="""success""", form=form, user=user)
-			
-	#if request.method == 'GET':
-	else:
+			else:
+				salt =   randomString(8)
+				password = hash_func(pword, salt)
+				new_user = User(username=uname, password=password, twofa=twofa, salt=salt)
+				sql_session.add(new_user)
+				sql_session.commit()
+				return render_template('register.html', title="Register", message="""success""", form=form, user=user)
+				
+	if request.method == 'GET':
+	#else:
 		return render_template('register.html', title="Register", form=form,  user=user)
 	
 @app.route('/login', methods=['GET', 'POST'])
@@ -92,23 +95,32 @@ def login():
 				user = session['username']
 	if request.method =='POST' :
 		# .get returns none if form value not there
-
-		if uname not in users:
+		user_query = sql_session.query(User.username, User.salt).filter(User.username == uname)
+		user_res = user_query.first()
+		
+		if user_res == None:
 			return render_template('login.html', title="Login", message="""Incorrect Username or Password""", form=form, user=user)
 		else:
-			if pword != users[uname]["password"]:
+			salt = user_res.salt
+			hashed = hash_func(pword, salt)
+			pass_query = sql_session.query(User.username).filter(User.username == uname, User.password == hashed)
+			pass_res = pass_query.all()
+			if len(pass_res) == 0:
 				return render_template('login.html', title="Login", message="""Incorrect Username or Password""", form=form, user=user)
-			elif twofa != users[uname]["2fa"]:
-				return render_template('login.html', title="Login", message="""Two-factor Authentication Failure, wrong code supplied""", form=form, user=user)
 			else:
-				resp = make_response(render_template('login.html', title="Login", message="""Success""",form=form, user=uname))
-				auth_token = randomString(20)
-				# Failure count is to check if someone is trying to enumerate the cookie for a user
-				cookies[auth_token] = {'username':uname, 'failurecount':0}
-				users[uname]['cookie'] = auth_token
-				session['auth'] = auth_token
-				session['username'] = uname
-				return resp
+				twofa_query = sql_session.query(User.username).filter(User.username == uname, User.password == hashed, User.twofa == twofa)
+				twofa_res = twofa_query.all()
+				if len(twofa_res) == 0:
+					return render_template('login.html', title="Login", message="""Two-factor Authentication Failure, wrong code supplied""", form=form, user=user)
+				else:
+					resp = make_response(render_template('login.html', title="Login", message="""Success""",form=form, user=uname))
+					auth_token = randomString(20)
+					login_event = WebSession(username=uname, cookie=auth_token, logintime=datetime.now(), logouttime=None)
+					sql_session.add(login_event)
+					sql_session.commit()
+					session['auth'] = auth_token
+					session['username'] = uname
+					return resp
 			
 	elif request.method=='GET':
 		"""
@@ -125,27 +137,17 @@ def spell_check():
 	form=SpellCheckForm(request.form)
 	authorized = False
 	user = None
-	if 'auth' in session.keys():
-		if session['auth'] is not None:
-			auth = session['auth']
-			if auth in cookies.keys():	
-				uname = session['username']
-				if uname is not None:
-					if checkcookie(auth, uname):
-						authorized = True
-						user = session['username']
-					else:
-						return redirect("/")
-				else:
-					return redirect("/")
-			else:
-				return redirect("/")
+	auth = session.get('auth', None)
+	uname = session.get('username', None)
+	if auth is None or uname is None:
+		return redirect("/")
+	else:
+		if checkcookie(auth, uname):
+			authorized = True
+			user = uname
 		else:
 			return redirect("/")
-	else:
-		return redirect("/")
-
-
+	
 	if authorized:
 		
 		if request.method == 'GET':
@@ -175,13 +177,14 @@ def spell_check():
 			if len(miss) >0:
 				if miss[len(miss)-1] ==",":
 					miss = miss[:len(miss)-1]
-			
+			history_row = History(username=user, text=text, results=miss)
+			sql_session.add(history_row)
 			return render_template('spell_check.html', title="Spell Check", textout=text, misspelled=miss, form=form, user=user)
 
 
 if __name__=="__main__":
 	
-	csrf = CsrfProtect()
+	csrf = CSRFProtect()
 	csrf.init_app(app)
 
 	#app.run()
