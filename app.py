@@ -3,7 +3,7 @@ import random
 import string
 import subprocess
 import os
-from flask.ext.wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect
 from forms import *
 from hashlib import sha256
 from webapp_sql import *
