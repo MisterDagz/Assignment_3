@@ -231,7 +231,7 @@ def history():
 			print(results, "HERE")
 			return render_template('spellcheck_history.html', title="Query History", form=form, admin=admin, user=user, results=results, amount = len(results))
 
-@app.route('/history/<history_num>', methods=["GET"])
+@app.route('/history/query<history_num>', methods=["GET"])
 def review(history_num):
 	user = None
 	if 'username' in session.keys():

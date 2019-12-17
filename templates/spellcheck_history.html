@@ -21,7 +21,7 @@
 	{% if results %}
 	{% for history in results%}
 	
-	<p><element id="query{{history.id}}"><a href="/history/{{history.id}}">Query {{history.id}}</a><br></p>
+	<p><element id="query{{history.id}}"><a href="/history/query{{history.id}}">Query {{history.id}}</a><br></p>
 	
 	{% endfor %}	
 	{% endif %}
