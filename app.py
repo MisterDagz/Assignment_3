@@ -185,8 +185,10 @@ def login_history():
 			if child_dictionary['logouttime'] is None:
 				child_dictionary['logouttime'] = "N/A"
 			list_of_session.append(child_dictionary)
+		sql_session.close()
 		return render_template('login_history.html', title="Login Logs", form=form, user=user, results=list_of_session)
 	else:
+		sql_session.close()
 		return render_template('login_history.html', title="Login Logs", form=form, user=user)
 	
 	
@@ -206,24 +208,28 @@ def logout():
 	sql_session.close()
 	return redirect("/")
 @app.route('/spell_check', methods=["GET", "POST"])
-def spell_check():	
+def spell_check():
+	sql_session = db_session()
 	form=SpellCheckForm(request.form)
 	authorized = False
 	user = None
 	auth = session.get('auth', None)
 	uname = session.get('username', None)
 	if auth is None or uname is None:
+		sql_session.close()
 		return redirect("/")
 	else:
 		if checkcookie(auth, uname):
 			authorized = True
 			user = uname
 		else:
+			sql_session.close()
 			return redirect("/")
 	
 	if authorized:
 		
 		if request.method == 'GET':
+			sql_session.close()
 			return render_template('spell_check.html', title="Spell Check", form=form, user=user)
 		if request.method == 'POST':
 			text = request.form.get('inputtext')
@@ -252,6 +258,7 @@ def spell_check():
 					miss = miss[:len(miss)-1]
 			history_row = History(username=user, text=text, results=miss)
 			sql_session.add(history_row)
+			sql_session.close()
 			return render_template('spell_check.html', title="Spell Check", textout=text, misspelled=miss, form=form, user=user)
 
 
