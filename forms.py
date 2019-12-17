@@ -15,3 +15,9 @@ class SpellCheckForm(FlaskForm):
 	inputtext = TextField('inputtext', [
         validators.Required()
     ])
+
+class LogForm(FlaskForm):
+	username = TextField('Username', [
+        	validators.Required(), 
+        	validators.Length(min=4, max=25)
+    	])

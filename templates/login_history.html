@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Login History</h1>
+    <form action="" method="post" novalidate>
+	{{ form.hidden_tag() }}
+        <p>
+	
+            Username:<br>
+            <input id="userid" name="userid" required size="32" type="text" value=""><br>
+            
+        </p>
+        
+        <p><input id="submit" name="submit" type="submit" value="Login"></p>
+        {% if results %}
+	{% for dictionary in results%}
+        	<p><ul id="login{{dictionary['event_num']}}">
+		<li><element id="login{{dictionary['event_num']}}_time" value="{{dictionary['logintime']}}"> login{{dictionary['event_num']}}_time" {{dictionary['logintime']}}</li>
+		<li><element id="logout{{dictionary['event_num']}}_time" value="{{dictionary['logouttime']}}">logout{{dictionary['event_num']}}_time {{dictionary['logouttime']}}</li>
+		</ul>
+	{% endfor %}	
+	{% endif %}
+    </form>
+{% endblock %}

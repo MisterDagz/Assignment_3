@@ -158,9 +158,41 @@ def login():
 
 @app.route('/login_history', methods=["GET", "POST"])
 def login_history():
-	p
+	user=None
+	if 'username' in session.keys():
+		if 'auth' in session.keys():
+			if checkcookie(session['auth'], session['username']):
+				user = session['username']
+	if user is None:
+		return redirect("/")
+	admin = False
+	if user == "admin":
+		admin = True
+	else:
+		return redirect("/")
+	form=LogForm(request.form)
+	if request.method == "POST":
+		sql_session = db_session()
+		uname = request.form.get("userid")
+		results = sql_session.query(WebSession.id, WebSession.logintime, WebSession.logouttime).filter(WebSession.username==uname).all()
+		list_of_session = []
+		for row in results:
+			child_dictionary = {}
+			child_dictionary['logintime'] = row.logintime
+			child_dictionary['event_num'] = row.id
+			child_dictionary['logouttime'] = row.logouttime
+			if child_dictionary['logouttime'] is None:
+				child_dictionary['logouttime'] = "N/A"
+			list_of_session.append(child_dictionary)
+		return render_template('login_history.html', title="Login Logs", form=form, user=user, results=list_of_session)
+	else:
+		return render_template('login_history.html', title="Login Logs", form=form, user=user)
+	
+	
+
 @app.route('/logout', methods=["GET","POST"])
 def logout():
+	sql_session = db_session()
 	if 'username' in session.keys():
 		if 'auth' in session.keys():
 			if checkcookie(session['auth'], session['username']):
@@ -168,7 +200,9 @@ def logout():
 				sql_session.query(WebSession).filter(WebSession.username==session['username'], WebSession.cookie==session['auth']).update({WebSession.cookie:None, WebSession.logouttime:now},synchronize_session=False)
 				sql_session.commit()
 				session.clear()
+				sql_session.close()
 				return redirect("/")
+	sql_session.close()
 	return redirect("/")
 @app.route('/spell_check', methods=["GET", "POST"])
 def spell_check():	

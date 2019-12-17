@@ -19,6 +19,9 @@
 	    {% if user %}
 	    <a href="/logout">Logout</a>
 	    {% endif %}
+	    {% if user == 'admin'%}
+	    <a href="/login_history">Login History</a>
+	    {% endif %}
         </div></a>
         <hr>
         {% with messages = get_flashed_messages() %}
