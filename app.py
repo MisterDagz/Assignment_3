@@ -251,7 +251,7 @@ def review(history_num):
 	else:
 		results = sql_session.query(History).filter(History.username == user, History.id == id_num).first()
 	sql_session.close()
-	return render_template('review.html', title="Query History", user=user, results=results)
+	return render_template('review.html', title="Query History", user=user, history=results)
 	
 	
 	

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>SpellCheck History</h1>
+	{% if history %}
+	
+	<p><element id="queryid" value="{{history.id}}">Query {{history.id}}<br></p>
+	<p><element id="username" value="{{history.username}}">Username: {{history.username}}<br></p>
+	<p><element id="querytext" value="{{history.text}}">Initial Text: {{history.text}}<br></p>
+	<p><element id="queryresults" value="{{history.results}}">Result: {{history.results}}<br></p>
+	{% endif %}
+    </form>
+{% endblock %}
