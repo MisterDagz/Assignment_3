@@ -192,7 +192,69 @@ def login_history():
 		return render_template('login_history.html', title="Login Logs", form=form, user=user)
 	
 	
+@app.route('/history', methods=["GET","POST"])
+def history():
+	user=None
+	if 'username' in session.keys():
+		if 'auth' in session.keys():
+			if checkcookie(session['auth'], session['username']):
+				user = session['username']
+	if user is None:
+		return redirect("/")
+	print(user)
+	admin = False
+	if user == "admin":
+		admin = True	
+	print(admin)
+	form=LogForm(request.form)
+	sql_session = db_session()
+	results = None
+	if admin and request.method == "POST":
+		uname = request.form.get("userid")
+		if uname is not None:
+			results = sql_session.query(History.id).filter(History.username==uname).all()
+			print(len(results))
+			sql_session.close()
+			return render_template('spellcheck_history.html', title="Login Logs", form=form, admin=admin, user=user, results=results, amount = len(results))
+		else:
+			print("HERE")
+			return render_template('spellcheck_history.html', title="Query History", form=form, admin=admin, user=user)
+	else:
+		if admin:
+			print(results, "HERE")
+			sql_session.close()
+			return render_template('spellcheck_history.html', title="Query History", form=form, admin=admin, user=user)
+		else:
+			
+			results = sql_session.query(History).filter(History.username==user).all()
+			sql_session.close()
+			print(results, "HERE")
+			return render_template('spellcheck_history.html', title="Query History", form=form, admin=admin, user=user, results=results, amount = len(results))
 
+@app.route('/history/<history_num>', methods=["GET"])
+def review(history_num):
+	user = None
+	if 'username' in session.keys():
+		if 'auth' in session.keys():
+			if checkcookie(session['auth'], session['username']):
+				user = session['username']
+	id_num = None
+	try:
+		id_num = int(history_num)
+	except ValueError:
+		
+		return redirect('/')
+	sql_session = db_session()
+	results = None
+	if user == "admin":
+		results = sql_session.query(History).filter(History.id == id_num).first()
+	else:
+		results = sql_session.query(History).filter(History.username == user, History.id == id_num).first()
+	sql_session.close()
+	return render_template('review.html', title="Query History", user=user, results=results)
+	
+	
+	
 @app.route('/logout', methods=["GET","POST"])
 def logout():
 	sql_session = db_session()
@@ -258,6 +320,7 @@ def spell_check():
 					miss = miss[:len(miss)-1]
 			history_row = History(username=user, text=text, results=miss)
 			sql_session.add(history_row)
+			sql_session.commit()
 			sql_session.close()
 			return render_template('spell_check.html', title="Spell Check", textout=text, misspelled=miss, form=form, user=user)
 

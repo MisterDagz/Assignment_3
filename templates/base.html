@@ -1,7 +1,7 @@
 <html>
     <head>
         {% if title %}
-        <title>{{ title }} - Assignment 2</title>
+        <title>{{ title }} - Assignment 3</title>
         {% else %}
         <title>Spell Checker</title>
         {% endif %}
@@ -10,19 +10,20 @@
         <div>
             Spell Checker:
 	    {% if user %}
-	    Hello,{{ user }}</title>
+	    Hello,{{ user }}
 	    {% endif %}
             <a href="/">Home</a>
             <a href="/login">Login</a>
 	    <a href="/register">Register</a>
 	    <a href="/spell_check">Spell check</a>
 	    {% if user %}
+	    <a href="/history">History</a>
 	    <a href="/logout">Logout</a>
 	    {% endif %}
 	    {% if user == 'admin'%}
 	    <a href="/login_history">Login History</a>
 	    {% endif %}
-        </div></a>
+        </div>
         <hr>
         {% with messages = get_flashed_messages() %}
         {% if messages %}
