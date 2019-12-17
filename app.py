@@ -82,7 +82,8 @@ def register():
 		pword = request.form.get('pword')
 		twofa = request.form.get('2fa')
 		if uname is not None:
-			if uname in users:
+			user_res = sql_session.query(User.username).filter(User.username == uname).all()
+			if len(user_res) == 0:
 				sql_session.close()
 				return render_template('register.html', title="Register", message="""failure""", form=form, user=user)
 			
